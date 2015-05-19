@@ -1,0 +1,26 @@
+{
+  "name": "oclc-ncip",
+  "version": "0.0.0",
+  "description": "Toolkit to make NCIP requests using OCLC WorldShare Management Services",
+  "main": "index.js",
+  "dependencies": {
+    "node-xml": "^1.0.2",
+    "oclc-wskey": "^1.1.1",
+    "request": "^2.55.0"
+  },
+  "devDependencies": {
+    "tape": "^4.0.0"
+  },
+  "scripts": {
+    "test": "node test/*"
+  },
+  "keywords": [
+    "oclc",
+    "worldcat",
+    "ncip",
+    "wms"
+  ],
+  "author": "Adam Malantonio <adam.malantonio@gmail.com>",
+  "repository": "https://www.github.com/malantonio/node-oclc-ncip",
+  "license": "MIT"
+}
