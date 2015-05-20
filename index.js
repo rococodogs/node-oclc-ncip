@@ -110,6 +110,152 @@ NCIP.prototype.cancelRequestItem = function(requestID, userID, requestScope, cb)
     ignoreTags: ['CancelRequestItemResponse'],
     callback: cb
   })
+}
+
+NCIP.prototype.lookupUser = function(userPrincipalID, opts, cb) {
+  var fieldPossibilities = ['LoanedItems', 'AccountDetails', 'RequestedItems'];
+  var fieldsDefaults = {
+    LoanedItems: {
+      _el: {
+        value: 'Loaned Items',
+        element: 'ElementType'
+      },
+      start: {
+        value: 1,
+        element: 'StartElement'
+      },
+      max: {
+        value: 10,
+        element: 'MaximumCount'
+      },
+      sortField: {
+        value: 'Date Due',
+        element: 'SortField'
+      },
+      sortOrder: {
+        value: 'Ascending',
+        element: 'SortOrderType'
+      }
+    },
+
+    AccountDetails: {
+      _el: {
+        value: 'Account Details',
+        element: 'ElementType'
+      },
+      start: {
+        value: 1,
+        element: 'StartElement'
+      },
+      max: {
+        value: 10,
+        element: 'MaximumCount'
+      },
+      sortField: {
+        value: 'Accrual Date',
+        element: 'SortField'
+      },
+      sortOrder: {
+        value: 'Ascending',
+        element: 'SortOrderType'
+      }
+    },
+    
+    RequestedItems: {
+      _el: {
+        value: 'Requested Items',
+        element: 'ElementType'
+      },
+      start: {
+        value: 1,
+        element: 'StartElement'
+      },
+      max: {
+        value: 10,
+        element: 'MaximumCount'
+      },
+      sortField: {
+        value: 'Date Placed',
+        element: 'SortField'
+      },
+      sortOrder: {
+        value: 'Ascending',
+        element: 'SortOrderType'
+      }
+    }
+  };
+
+  if ( typeof opts === 'function' ) {
+    cb = opts;
+    opts = {};
+  }
+
+  var opts = opts || {}
+    , agencyID = opts.agencyID || this.agencyID
+    , fields = opts.fields || {}
+    , wskey = opts.wskey || this.wskey
+    , ext = []
+    , url = 'https://' + agencyID + '.share.worldcat.org/ncip/circ-patron'
+    , data
+    ;
+
+  url += '?principalID=' + wskey.user.principalID
+      +  '&principalIDNS=' + wskey.user.principalIDNS
+      ;
+
+  data = [
+    util.xmlHeader(),
+    '<NCIPMessage xmlns="http://www.niso.org/2008/ncip" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ncip="http://www.niso.org/2008/ncip" xmlns:ns2="http://oclc.org/WCL/ncip/2011/extensions" xsi:schemaLocation="http://www.niso.org/2008/ncip http://www.niso.org/schemas/ncip/v2_01/ncip_v2_01.xsd" ncip:version="http://www.niso.org/schemas/ncip/v2_01/ncip_v2_01.xsd">',
+      '<LookupUser>',
+        util.initiationHeader(agencyID),
+        util.userID(userPrincipalID, agencyID)
+  ];
+
+  if ( fields instanceof Array ) {
+    var fieldObj = {};
+    fields.forEach(function(fld) { fieldObj[fld] = {} });
+    fields = fieldObj;
+  }
+
+  for (var field in fields) {
+    if ( !fields.hasOwnProperty(field) && fieldPossibilities.indexOf(field) === -1 ) continue;
+
+    var defaults = fieldsDefaults[field];
+    var current = fields[field];
+
+    // add `<LoanedItemsDesired/>` tag to the body
+    data.push(util.tag(field + 'Desired'));
+
+    // add opening tag to `<ext>` collection
+    ext.push('<ResponseElementControl>');
+
+    for (var f in defaults) {
+      if ( current[f] ) {
+        ext.push(util.tag(defaults[f].element, current[f]));
+      } else {
+        ext.push(util.tag(defaults[f].element, defaults[f].value));
+      }
+    }
+
+    // close up shop
+    ext.push('</ResponseElementControl>');
+  }
+
+  if ( ext.length ) {
+    data.push(util.tag('Ext', ext.join('')));
+  }
+
+    data.push('</LookupUser>');
+  data.push('</NCIPMessage>');
+
+  return sendRequest({
+    url: url,
+    method: 'POST',
+    wskey: wskey,
+    data: data.join(''),
+    ignoreTags: ['LookupUserResponse'],
+    callback: cb
+  });
 
 }
 
