@@ -66,7 +66,7 @@ NCIP.prototype.cancelRequestItem = function(requestID, userID, requestScope, cb)
     ;
 
   if ( !wskey.hasUser() ) {
-    throw Error('WSKey must have a user with a principalID and principalIDN to request an item');
+    throw Error('WSKey must have a user with a principalID and principalIDNS to request an item');
   } else {
     url += '&principalID=' + wskey.user.principalID
         +  '&principalIDNS=' + wskey.user.principalIDNS
@@ -112,140 +112,102 @@ NCIP.prototype.cancelRequestItem = function(requestID, userID, requestScope, cb)
   })
 }
 
-NCIP.prototype.lookupUser = function(userPrincipalID, opts, cb) {
-  var fieldPossibilities = ['LoanedItems', 'AccountDetails', 'RequestedItems'];
-  var fieldsDefaults = {
-    LoanedItems: {
-      _el: {
-        value: 'Loaned Items',
-        element: 'ElementType'
-      },
-      start: {
-        value: 1,
-        element: 'StartElement'
-      },
-      max: {
-        value: 10,
-        element: 'MaximumCount'
-      },
-      sortField: {
-        value: 'Date Due',
-        element: 'SortField'
-      },
-      sortOrder: {
-        value: 'Ascending',
-        element: 'SortOrderType'
-      }
-    },
+NCIP.prototype.checkInItem = function(branchID, itemBarcode, cb) {
+  var opts = {};
 
-    AccountDetails: {
-      _el: {
-        value: 'Account Details',
-        element: 'ElementType'
-      },
-      start: {
-        value: 1,
-        element: 'StartElement'
-      },
-      max: {
-        value: 10,
-        element: 'MaximumCount'
-      },
-      sortField: {
-        value: 'Accrual Date',
-        element: 'SortField'
-      },
-      sortOrder: {
-        value: 'Ascending',
-        element: 'SortOrderType'
-      }
-    },
-    
-    RequestedItems: {
-      _el: {
-        value: 'Requested Items',
-        element: 'ElementType'
-      },
-      start: {
-        value: 1,
-        element: 'StartElement'
-      },
-      max: {
-        value: 10,
-        element: 'MaximumCount'
-      },
-      sortField: {
-        value: 'Date Placed',
-        element: 'SortField'
-      },
-      sortOrder: {
-        value: 'Ascending',
-        element: 'SortOrderType'
-      }
-    }
-  };
+  if ( typeof branchID === 'object' ) {
+    opts = branchID;
+    cb = itemBarcode;
+    branchID = opts.branchID;
+    itemBarcode = opts.itemBarcode;
+  }
 
-  if ( typeof opts === 'function' ) {
+  var agencyID = opts.agencyID || this.agencyID
+    , wskey = opts.wskey || this.wskey
+    , url = STAFF_URL + '?inst=' + agencyID
+    , data
+    ;
+
+  if ( !wskey.hasUser() ) {
+    throw Error('WSKey must have a user with a principalID and principalIDNS to request an item');
+  } else {
+    url += '&principalID=' + wskey.user.principalID
+        +  '&principalIDNS=' + wskey.user.principalIDNS
+        ;
+  }
+
+  data = [
+    util.xmlHeader(),
+      '<NCIPMessage xmlns="http://www.niso.org/2008/ncip" xmlns:ncip="http://www.niso.org/2008/ncip" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ncip:version="http://www.niso.org/schemas/ncip/v2_01/ncip_v2_01.xsd" xsi:schemaLocation="http://www.niso.org/2008/ncip http://www.niso.org/schemas/ncip/v2_01/ncip_v2_01.xsd">',
+        '<CheckInItem>',
+          util.initiationHeader(branchID),
+          util.itemID(itemBarcode, agencyID),
+        '</CheckInItem>',
+      '</NCIPMessage>'
+  ];
+
+  return sendRequest({
+    url: url,
+    method: 'POST',
+    wskey: wskey,
+    data: data.join(''),
+    ignoreTags: ['CheckInItemResponse'],
+    callback: cb
+  });
+
+};
+
+NCIP.prototype.checkOutItem = function(branchID, itemBarcode, userBarcode, opts, cb) {
+
+  // checkOutItem({/* ... */}, function(){})
+  if ( typeof branchID === 'object' ) {
+     opts = branchID;
+     cb = itemBarcode;
+     branchID = opts.branchID;
+     itemBarcode = opts.itemBarcode;
+     userBarcode = opts.userBarcode;
+  } 
+
+  // checkOutItem(itemBarcode, userBarcode, function(){})
+  else if ( typeof opts === 'function' ) {
     cb = opts;
     opts = {};
   }
 
   var opts = opts || {}
     , agencyID = opts.agencyID || this.agencyID
-    , fields = opts.fields || {}
     , wskey = opts.wskey || this.wskey
-    , ext = []
-    , url = 'https://' + agencyID + '.share.worldcat.org/ncip/circ-patron'
+    , url = STAFF_URL + '?inst=' + agencyID
     , data
     ;
 
-  url += '?principalID=' + wskey.user.principalID
-      +  '&principalIDNS=' + wskey.user.principalIDNS
-      ;
+  if ( !wskey.hasUser() ) {
+    throw Error('WSKey must have a user with a principalID and principalIDNS to request an item');
+  } else {
+    url += '&principalID=' + wskey.user.principalID
+        +  '&principalIDNS=' + wskey.user.principalIDNS
+        ;
+  }
 
   data = [
     util.xmlHeader(),
-    '<NCIPMessage xmlns="http://www.niso.org/2008/ncip" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ncip="http://www.niso.org/2008/ncip" xmlns:ns2="http://oclc.org/WCL/ncip/2011/extensions" xsi:schemaLocation="http://www.niso.org/2008/ncip http://www.niso.org/schemas/ncip/v2_01/ncip_v2_01.xsd" ncip:version="http://www.niso.org/schemas/ncip/v2_01/ncip_v2_01.xsd">',
-      '<LookupUser>',
-        util.initiationHeader(agencyID),
-        util.userID(userPrincipalID, agencyID)
+      '<NCIPMessage xmlns="http://www.niso.org/2008/ncip" xmlns:ncip="http://www.niso.org/2008/ncip" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ncip:version="http://www.niso.org/schemas/ncip/v2_01/ncip_v2_01.xsd" xsi:schemaLocation="http://www.niso.org/2008/ncip http://www.niso.org/schemas/ncip/v2_01/ncip_v2_01.xsd">',
+        '<CheckOutItem>',
+          util.initiationHeader(branchID),
+          util.userID(userBarcode, agencyID),
+          util.itemID(itemBarcode, agencyID),
+          util.tag('ItemElementType', 'Bibliographic Description'),
+          util.tag('ItemElementType', 'Circulation Status'),
+          util.tag('ItemElementType', 'Item Description'),
+          util.tag('ItemElementType', 'Location')
   ];
 
-  if ( fields instanceof Array ) {
-    var fieldObj = {};
-    fields.forEach(function(fld) { fieldObj[fld] = {} });
-    fields = fieldObj;
+  // TODO: check that date is valid/date object
+  if ( opts.desiredDueDate ) {
+    data.push(util.tag('DesiredDueDate', desiredDueDate));
   }
 
-  for (var field in fields) {
-    if ( !fields.hasOwnProperty(field) && fieldPossibilities.indexOf(field) === -1 ) continue;
-
-    var defaults = fieldsDefaults[field];
-    var current = fields[field];
-
-    // add `<LoanedItemsDesired/>` tag to the body
-    data.push(util.tag(field + 'Desired'));
-
-    // add opening tag to `<ext>` collection
-    ext.push('<ResponseElementControl>');
-
-    for (var f in defaults) {
-      if ( current[f] ) {
-        ext.push(util.tag(defaults[f].element, current[f]));
-      } else {
-        ext.push(util.tag(defaults[f].element, defaults[f].value));
-      }
-    }
-
-    // close up shop
-    ext.push('</ResponseElementControl>');
-  }
-
-  if ( ext.length ) {
-    data.push(util.tag('Ext', ext.join('')));
-  }
-
-    data.push('</LookupUser>');
+    data.push('</CheckOutItem>');
   data.push('</NCIPMessage>');
 
   return sendRequest({
@@ -253,11 +215,10 @@ NCIP.prototype.lookupUser = function(userPrincipalID, opts, cb) {
     method: 'POST',
     wskey: wskey,
     data: data.join(''),
-    ignoreTags: ['LookupUserResponse'],
+    ignoreTags: ['CheckOutItemResponse'],
     callback: cb
   });
-
-}
+};
 
 NCIP.prototype.requestBibItem = function(oclcNumber, userBarcode, pickupLocation, cb) {
   var opt;
@@ -307,7 +268,7 @@ NCIP.prototype.requestItem = function(itemBarcode, userBarcode, pickupLocation, 
   url += '?inst=' + agencyID;
 
   if ( !wskey.hasUser() ) {
-    throw Error('WSKey must have a user with a principalID and principalIDN to request an item');
+    throw Error('WSKey must have a user with a principalID and principalIDNS to request an item');
   } else {
     url += '&principalID=' + wskey.user.principalID
         +  '&principalIDNS=' + wskey.user.principalIDNS
@@ -410,7 +371,7 @@ function sendRequest(opt, cb) {
             'type': null
           },
           'message': parsed.problem.problemType,
-          'detail': parsed.problem.problemType
+          'detail': parsed.problem.problemDetail || parsed.problem.problemType
           }, null);
       } else return cb(null, parsed);
     }
