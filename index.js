@@ -376,7 +376,8 @@ function sendRequest(opt, cb) {
     method: method,
     headers: {
       'Authorization': wskey.HMACSignature(method, url),
-      'Accept': 'application/json'
+      'Accept': 'application/json',
+      'Content-type': 'application/xml'
     },
     body: data
   }, function(err, resp, body) {
@@ -391,6 +392,15 @@ function sendRequest(opt, cb) {
         'message': 'Unauthorized',
         'detail': 'This request requires HTTP authentication (Unauthorized)'
       }, null);
+    } else if (resp.statusCode === 404) {
+      return cb({
+        'code': {
+          'value': 404,
+          'type': null
+        },
+        'message': 'Not Found',
+        'detail': 'The requested resource () is not available.'
+      }, null);
     } else {
       var parsed = util.parseXMLResponse(body, ignore);
       if ( parsed.problem ) {
@@ -399,8 +409,8 @@ function sendRequest(opt, cb) {
             'value': 400,
             'type': null
           },
-          'message': parsed.problem,
-          'detail': parsed.problem
+          'message': parsed.problem.problemType,
+          'detail': parsed.problem.problemType
           }, null);
       } else return cb(null, parsed);
     }
