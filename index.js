@@ -4,6 +4,8 @@ var WSKey = require('oclc-wskey');
 var util = require('./xml-util');
 var noop = function(){};
 
+var STAFF_URL = 'https://circ.sd00.worldcat.org/ncip';
+
 function NCIP (agencyID, wskey) {
 
   if ( !(this instanceof NCIP) ) return new NCIP(agencyID, wskey);
@@ -60,7 +62,7 @@ NCIP.prototype.cancelRequestItem = function(requestID, userID, requestScope, cb)
     , wskey = opt.wskey || this.wskey
     , cb = cb || noop
     , requestType = opt.requestType || 'Hold'
-    , url = 'https://circ.sd00.worldcat.org/ncip?inst=' + agencyID
+    , url = STAFF_URL + '?inst=' + agencyID
     ;
 
   if ( !wskey.hasUser() ) {
@@ -133,7 +135,7 @@ NCIP.prototype.requestBibItem = function(oclcNumber, userBarcode, pickupLocation
 }
 
 NCIP.prototype.requestItem = function(itemBarcode, userBarcode, pickupLocation, cb) {
-  var url = 'https://circ.sd00.worldcat.org/ncip';
+  var url = STAFF_URL;
   var opt = {};
 
   if ( typeof itemBarcode === 'object' ) {
