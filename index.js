@@ -26,20 +26,20 @@ NCIP.prototype.cancelRequestBibItem = function(bibNumber, userID, cb) {
     opt = bibNumber;
     cb = userID;
 
-    bibNumber = opt.bibNumber;
+    bibNumber = opt.bibNumber || opt.requestID;
     userID = opt.userID
   }
 
   return this.cancelRequestItem(bibNumber, userID, 'Bibliographic Item', cb);
 }
 
-NCIP.prototype.cancelRequestItem = function(requestID, userID, requestScope, cb) {
+NCIP.prototype.cancelRequestItem = function(requestID, userBarcode, requestScope, cb) {
   var opt = {}, data;
 
   // cancelRequestItem({/* ... */}, cb(err, resp){});
   if ( typeof reqID === 'object' ) {
     opt = reqID;
-    userID = opt.userID;
+    userBarcode = opt.userBarcode || opt.userID;
     requestID = opt.requestID || opt.itemBarcode || opt.oclcNumber;
     requestScope = opt.requestScope;
 
@@ -51,7 +51,7 @@ NCIP.prototype.cancelRequestItem = function(requestID, userID, requestScope, cb)
     }
   } 
 
-  // cancelRequestItem(reqID, userID, cb(){})
+  // cancelRequestItem(reqID, userBarcode, cb(){})
   else if ( typeof requestScope === 'function' ) {
     // default RequestScope to 'Item' if it's not provided
     cb = requestScope;
@@ -78,7 +78,7 @@ NCIP.prototype.cancelRequestItem = function(requestID, userID, requestScope, cb)
     '<NCIPMessage xmlns="http://www.niso.org/2008/ncip" xmlns:ncip="http://www.niso.org/2008/ncip" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ncip:version="http://www.niso.org/schemas/ncip/v2_01/ncip_v2_01.xsd" xsi:schemaLocation="http://www.niso.org/2008/ncip http://www.niso.org/schemas/ncip/v2_01/ncip_v2_01.xsd">',
       '<CancelRequestItem>',
       util.initiationHeader(agencyID),
-      util.userID(userID, agencyID),
+      util.userID(userBarcode, agencyID),
       util.tag('RequestType', requestType),
       util.tag('RequestScopeType', requestScope)
   ];
