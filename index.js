@@ -264,8 +264,8 @@ NCIP.prototype.requestItem = function(itemBarcode, userBarcode, pickupLocation, 
     , wskey = opt.wskey || this.wskey
     , requestType = opt.requestType || 'Hold'
     , requestScope = opt.requestScope || 'Item'
-    , dateNeeded = opt.earliestDateNeeded
-    , needBefore = opt.needBeforeDate
+    , earliestDateNeeded = opt.earliestDateNeeded
+    , needBeforeDate = opt.needBeforeDate
     , data 
     ;
 
@@ -303,24 +303,24 @@ NCIP.prototype.requestItem = function(itemBarcode, userBarcode, pickupLocation, 
     throw Error('RequestItem requires a requestScope of either \'Item\' or \'Bibliographic Item\'');
   }
 
-  if ( dateNeeded ) {
-    if ( !(dateNeeded instanceof Date) ) {
-      dateNeeded = new Date(Date.parse(dateNeeded));
-      if ( isNaN(dateNeeded) ) {
+  if ( earliestDateNeeded ) {
+    if ( !(earliestDateNeeded instanceof Date) ) {
+      earliestDateNeeded = new Date(Date.parse(earliestDateNeeded));
+      if ( isNaN(earliestDateNeeded) ) {
         throw Error('earliestDateNeeded must be a Date object or a parseable date string');
       }
     }
-    data.push(util.tag('EarliestDateNeeded', opt.earliestDateNeeded));
+    data.push(util.tag('EarliestDateNeeded', earliestDateNeeded.toISOString()));
   }
 
-  if ( needBefore ) {
-    if ( !(needBefore instanceof Date) ) {
-      needBefore = new Date(Date.parse(needBefore));
-      if ( isNan(needBefore) ) {
+  if ( needBeforeDate ) {
+    if ( !(needBeforeDate instanceof Date) ) {
+      needBeforeDate = new Date(Date.parse(needBeforeDate));
+      if ( isNaN(needBeforeDate) ) {
         throw Error('needBeforeDate must be a Date object or a parseable date string'); 
       }
     }
-    data.push(util.tag('NeedBeforeDate', opt.needBeforeDate));
+    data.push(util.tag('NeedBeforeDate', needBeforeDate.toISOString()));
   }
 
     data.push('</RequestItem>');
